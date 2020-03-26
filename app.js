@@ -65,12 +65,12 @@ wss.on("connection", ws => {
   ws.on("message", message => {
     const parsedMessage = JSON.parse(message);
 
-    //update user time
-    updateUser(parsedMessage.uid);
-
     if (parsedMessage.type == type.PING) {
       console.log(`PING: ${parsedMessage.uid}`);
+      return;
     }
+    //update user time
+    updateUser(parsedMessage.uid);
 
     //user cannot be found immediately return
     if (!users.get(parsedMessage.uid)) return;
