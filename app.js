@@ -41,7 +41,8 @@ const type = {
   PLAYBACK: "PLAYBACK",
   SESSION_INIT: "SESSION_INIT",
   SESSION_ACK: "SESSION_ACK",
-  SESSION_JOIN: "SESSION_JOIN"
+  SESSION_JOIN: "SESSION_JOIN",
+  PING: "PING"
 };
 
 const app = express();
@@ -66,6 +67,10 @@ wss.on("connection", ws => {
 
     //update user time
     updateUser(parsedMessage.uid);
+
+    if (parsedMessage.type == type.PING) {
+      console.log(`PING: ${parsedMessage.uid}`);
+    }
 
     //user cannot be found immediately return
     if (!users.get(parsedMessage.uid)) return;
