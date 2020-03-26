@@ -1,6 +1,6 @@
 //var createError = require("http-errors");
 var express = require("express");
-var http = require("http");
+var https = require("https");
 var WebSocket = require("ws");
 var uuidv4 = require("uuid").v4;
 
@@ -117,7 +117,7 @@ wss.on("connection", ws => {
 });
 
 //start our server
-server.listen(process.env.port, () => {
+server.listen(port, () => {
   console.log(`Server started on port ${server.address().port} :)`);
 });
 
