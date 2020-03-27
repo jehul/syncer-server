@@ -42,13 +42,14 @@ const type = {
   SESSION_INIT: "SESSION_INIT",
   SESSION_ACK: "SESSION_ACK",
   SESSION_JOIN: "SESSION_JOIN",
-  PING: "PING"
+  PING: "PING",
+  DISCONNECT: "DISCONNECT"
 };
 
 const app = express();
 
 let host = "localhost";
-let port = process.env.PORT || 5000;
+let port = process.env.PORT || 8888;
 
 //initialize a simple http server
 const server = http.createServer(app);
@@ -70,10 +71,27 @@ wss.on("connection", ws => {
       return;
     }
     //update user time
-    updateUser(parsedMessage.uid);
+    console.log(parsedMessage);
 
     //user cannot be found immediately return
     if (!users.get(parsedMessage.uid)) return;
+
+    updateUser(parsedMessage.uid);
+
+    //user has requested a disconnect
+    if (parsedMessage.type == type.DISCONNECT) {
+      const user = users.get(parsedMessage.uid);
+      const session = sessions.get(user.sessionId);
+      if (session) {
+        const index = session.users.indexOf(user.id);
+        session.users.splice(index, 1, user.id);
+      }
+      user.ws.close(); //close websocket
+      console.log(user);
+      users.delete(parsedMessage.uid);
+      console.log(session);
+    }
+
     //session initialization LEADER INITIATED
     else if (parsedMessage.type == type.SESSION_INIT) {
       const sessionId = generateUUID();
@@ -107,6 +125,7 @@ wss.on("connection", ws => {
     //playback controls
     else if (parsedMessage.type == type.PLAYBACK) {
       updateSession(parsedMessage.sessionId, parsedMessage);
+      console.log(parsedMessage.currentTime);
       sessions.get(parsedMessage.sessionId).users.forEach(clientId => {
         const user = users.get(clientId);
         if (user.ws.readyState === WebSocket.OPEN) {
@@ -128,11 +147,11 @@ server.listen(port, () => {
 
 const generateUUID = () => uuidv4();
 
-const generateUser = (uid, ws, sessionId = "") => {
+const generateUser = (uid, ws, sessionId) => {
   users.set(uid, {
     id: uid,
     lastKnownUpdateTime: new Date(),
-    sessionId: "",
+    sessionId: sessionId || "",
     ws: ws
   });
 };
@@ -142,7 +161,7 @@ const updateUser = uid => {
   users.set(uid, {
     uid: uid,
     lastKnownUpdateTime: new Date(),
-    sessionId: oldUser.sessionId,
+    sessionId: oldUser.sessionId || "",
     ws: oldUser.ws
   });
 };
@@ -168,7 +187,7 @@ const updateSession = (sessionId, data) => {
     lastKnownUpdateTime: new Date(),
     ownerId: data.uid,
     paused: data.paused,
-    users: oldSession.users,
+    users: data.users || oldSession.users,
     videoId: oldSession.videoId
   });
 
