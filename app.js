@@ -119,6 +119,15 @@ wss.on("connection", ws => {
       generateUser(user.id, user.ws, parsedMessage.sessionId);
       const session = sessions.get(parsedMessage.sessionId);
       session.users.push(parsedMessage.uid);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            type: type.SESSION_ACK,
+            sessionId: sessionId,
+            sessionURL: generateSessionURL(parsedMessage.videoId, sessionId)
+          })
+        );
+      }
       console.log(session);
     }
 
@@ -137,7 +146,7 @@ wss.on("connection", ws => {
 
   //send immediatly a feedback to the incoming connection
   //send user their uid
-  ws.send(JSON.stringify({ type: type.INIT, uuid: uuid }));
+  ws.send(JSON.stringify({ type: type.INIT, uid: uuid }));
 });
 
 //start our server
